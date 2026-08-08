@@ -1174,9 +1174,30 @@
             }
         }
 
+        // Built-in library — songs hosted in the repo
+        const BUILTIN_SONGS = [
+            { name: "Luca's Theme", url: "music/luca-theme.wav" },
+            { name: "Luca's Full Theme", url: "music/luca-full-song.wav" },
+        ];
+
+        async function loadBuiltinSongs(player) {
+            for (const song of BUILTIN_SONGS) {
+                try {
+                    const resp = await fetch(song.url);
+                    if (!resp.ok) continue;
+                    const blob = await resp.blob();
+                    const file = new File([blob], song.name + '.wav', { type: 'audio/wav' });
+                    await player.addFiles([file]);
+                } catch (e) {
+                    console.log(`Could not load ${song.name}: ${e.message}`);
+                }
+            }
+        }
+
         // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             window.neoPlayer = new NeoAudioPlayer();
+            await loadBuiltinSongs(window.neoPlayer);
         });
     </script>
 </body>
