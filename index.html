@@ -569,6 +569,24 @@
                     </ul>
                 </div>
 
+                <div class="library-section">
+                    <h4>🎤 Vocal Studio</h4>
+                    <button id="generateVocalsBtn" style="
+                        width: 100%;
+                        background: linear-gradient(135deg, #7b2ff7, #00d4ff);
+                        border: none;
+                        color: white;
+                        padding: 12px 16px;
+                        border-radius: 10px;
+                        font-size: 0.95rem;
+                        font-weight: 600;
+                        cursor: pointer;
+                        transition: all 0.3s;
+                        margin-bottom: 8px;
+                    ">🎤 Generate Luca's Theme with Vocals</button>
+                    <div id="vocalStatus" style="font-size: 0.8rem; color: #888; text-align: center;"></div>
+                </div>
+
                 <div class="drop-zone" id="dropZone">
                     <div class="drop-zone-icon">📁</div>
                     <h3>Drop Audio Files</h3>
@@ -709,6 +727,7 @@
                 this.loadFromLocalStorage();
                 this.renderPlaylist();
                 this.renderLibrary();
+                this.setupVocalStudio();
             }
 
             setupAudioContext() {
@@ -747,6 +766,81 @@
                 }
                 this.vizBars = container.querySelectorAll('.viz-bar');
                 this.animateVisualizer();
+            }
+
+            setupVocalStudio() {
+                const btn = document.getElementById('generateVocalsBtn');
+                const status = document.getElementById('vocalStatus');
+                if (!btn) return;
+
+                btn.addEventListener('click', async () => {
+                    btn.disabled = true;
+                    btn.textContent = '⏳ Generating...';
+                    status.textContent = 'Initializing vocal synthesizer...';
+
+                    try {
+                        // Load scripts if not already loaded
+                        if (!window.VocalSynthesizer) {
+                            status.textContent = 'Loading vocal engine...';
+                            await this.loadScript('vocal-synthesizer.js');
+                        }
+                        if (!window.LucaThemeGenerator) {
+                            status.textContent = 'Loading song generator...';
+                            await this.loadScript('luca-theme-generator.js');
+                        }
+
+                        status.textContent = '🎤 Synthesizing vocals + instruments...';
+                        const generator = new LucaThemeGenerator();
+                        const audioBuffer = await generator.generate();
+
+                        status.textContent = '📦 Exporting to WAV...';
+                        const wavBlob = generator.exportWAV(audioBuffer);
+                        const url = URL.createObjectURL(wavBlob);
+
+                        // Add to player
+                        const track = {
+                            id: Date.now(),
+                            name: "Luca's Theme (Vocals)",
+                            file: null,
+                            url: url,
+                            duration: audioBuffer.duration,
+                            type: 'audio/wav',
+                            size: wavBlob.size
+                        };
+
+                        this.tracks.push(track);
+                        this.queue.push(track);
+                        this.playTrack(this.queue.length - 1);
+                        this.renderLibrary();
+
+                        status.textContent = '✅ Playing Luca\'s Theme with vocals!';
+
+                        // Also offer download
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'luca-theme-vocals.wav';
+                        a.textContent = '💾 Download WAV';
+                        a.style.cssText = 'color: #00d4ff; font-size: 0.85rem; display: block; text-align: center; margin-top: 8px;';
+                        status.appendChild(a);
+
+                    } catch (e) {
+                        status.textContent = '❌ Error: ' + e.message;
+                        console.error(e);
+                    } finally {
+                        btn.disabled = false;
+                        btn.textContent = '🎤 Generate Luca\'s Theme with Vocals';
+                    }
+                });
+            }
+
+            loadScript(src) {
+                return new Promise((resolve, reject) => {
+                    const script = document.createElement('script');
+                    script.src = src;
+                    script.onload = resolve;
+                    script.onerror = () => reject(new Error('Failed to load ' + src));
+                    document.head.appendChild(script);
+                });
             }
 
             animateVisualizer() {
