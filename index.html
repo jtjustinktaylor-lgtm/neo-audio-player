@@ -388,6 +388,37 @@
             .album-art { width: 150px; height: 150px; }
         }
 
+        /* Lyrics */
+        .lyrics-panel {
+            background: rgba(255,255,255,0.03);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        .lyrics-panel h3 {
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            color: #00d4ff;
+        }
+        .lyrics-content {
+            max-height: 300px;
+            overflow-y: auto;
+            font-size: 0.95rem;
+            line-height: 1.8;
+            color: #ccc;
+        }
+        .lyrics-content .section-label {
+            color: #7b2ff7;
+            font-weight: bold;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 15px;
+            margin-bottom: 5px;
+        }
+        .lyrics-content .section-label:first-child { margin-top: 0; }
+
         /* Scrollbar */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); }
@@ -603,6 +634,12 @@
                         <input type="range" class="effect-slider" id="speedSlider" min="50" max="200" value="100">
                         <span class="effect-value" id="speedValue">1.0x</span>
                     </div>
+                </section>
+
+                <!-- Lyrics -->
+                <section class="lyrics-panel" id="lyricsPanel" style="display:none;">
+                    <h3>🎤 Lyrics</h3>
+                    <div class="lyrics-content" id="lyricsContent"></div>
                 </section>
 
                 <!-- Playlist -->
@@ -1007,6 +1044,7 @@
                 document.getElementById('albumArt').textContent = '🎵';
                 document.getElementById('albumArt').classList.add('playing');
                 this.updatePlayButton();
+                showLyrics(track.name);
             }
 
             updateMiniPlayer(track) {
@@ -1171,6 +1209,78 @@
                     console.log('No saved state');
                 }
             }
+        }
+
+        // Lyrics database — add lyrics for your songs here
+        const LYRICS_DB = {
+            "Luca's Theme": {
+                sections: [
+                    { label: "Verse 1", lines: [
+                        "Born with a spark, a fire in my eye,",
+                        "Every gym, every badge, every trial I face,",
+                        "Luca's on a mission, gonna win the race."
+                    ]},
+                    { label: "Chorus", lines: [
+                        "Gotta catch 'em all, Luca's the name,",
+                        "Pokémon Master, that's my claim to fame.",
+                        "Thunderbolt and fire, water, grass, and ground,",
+                        "Luca's gonna battle 'til the best is found!"
+                    ]},
+                    { label: "Verse 2", lines: [
+                        "Charizard is blazing, Blastoise making waves,",
+                        "Venusaur in the garden, these are friends I've saved.",
+                        "From Pallet Town to Indigo, I've traveled far,",
+                        "Every rival's shaking, I'm a superstar."
+                    ]},
+                    { label: "Pre-Chorus", lines: [
+                        "Team Rocket's trying, but they can't compete,",
+                        "Luca's got the power, Luca's got the heat."
+                    ]},
+                    { label: "Chorus", lines: [
+                        "Gotta catch 'em all, Luca's the name,",
+                        "Pokémon Master, that's my claim to fame.",
+                        "Thunderbolt and fire, water, grass, and ground,",
+                        "Luca's gonna battle 'til the best is found!"
+                    ]},
+                    { label: "Bridge", lines: [
+                        "From Kanto to Johto, Hoenn to Sinnoh,",
+                        "Every region knows me, every legend knows.",
+                        "The Elite Four's waiting, but I'm ready now,",
+                        "Luca's gonna make it, take the champion's bow!"
+                    ]},
+                    { label: "Final Chorus", lines: [
+                        "Gotta catch 'em all, Luca's the name,",
+                        "Pokémon Master, that's my claim to fame.",
+                        "Thunderbolt and fire, water, grass, and ground,",
+                        "Luca's gonna battle 'til the best is found!"
+                    ]},
+                    { label: "Outro", lines: [
+                        "Luca... Luca... Pokémon Master!",
+                        "Gotta catch 'em all... forever and after!"
+                    ]}
+                ]
+            },
+            "Luca's Full Theme": null // same song, use same lyrics
+        };
+
+        // Alias: Luca's Full Theme uses same lyrics as Luca's Theme
+        LYRICS_DB["Luca's Full Theme"] = LYRICS_DB["Luca's Theme"];
+
+        function showLyrics(trackName) {
+            const panel = document.getElementById('lyricsPanel');
+            const content = document.getElementById('lyricsContent');
+            const lyrics = LYRICS_DB[trackName];
+
+            if (!lyrics) {
+                panel.style.display = 'none';
+                return;
+            }
+
+            panel.style.display = 'block';
+            content.innerHTML = lyrics.sections.map(section => `
+                <div class="section-label">${section.label}</div>
+                ${section.lines.map(line => `<div>${line}</div>`).join('')}
+            `).join('');
         }
 
         // Built-in library — songs hosted in the repo (streamed directly, no download needed)
