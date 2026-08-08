@@ -874,11 +874,10 @@
                     this.audioContext.resume();
                 }
 
-                if (this.audioSourceNode) {
-                    this.audioSourceNode.disconnect();
+                if (!this.audioSourceNode) {
+                    this.audioSourceNode = this.audioContext.createMediaElementSource(this.audioElement);
+                    this.audioSourceNode.connect(this.bassFilter);
                 }
-                this.audioSourceNode = this.audioContext.createMediaElementSource(this.audioElement);
-                this.audioSourceNode.connect(this.bassFilter);
 
                 this.audioElement.src = track.url;
                 this.audioElement.play();
@@ -1174,30 +1173,53 @@
             }
         }
 
-        // Built-in library — songs hosted in the repo
+        // Built-in library — songs hosted in the repo (streamed directly, no download needed)
         const BUILTIN_SONGS = [
-            { name: "Luca's Theme", url: "music/luca-theme.wav" },
-            { name: "Luca's Full Theme", url: "music/luca-full-song.wav" },
+            { name: "Luca's Theme", url: "music/luca-theme.wav", type: "audio/wav" },
+            { name: "Luca's Full Theme", url: "music/luca-full-song.wav", type: "audio/wav" },
         ];
 
-        async function loadBuiltinSongs(player) {
+        function loadBuiltinSongs(player) {
+            const statusEl = document.getElementById('scanStatus');
+            statusEl.textContent = 'Loading built-in songs...';
+            statusEl.className = 'scan-status scanning';
+
+            let loaded = 0;
             for (const song of BUILTIN_SONGS) {
-                try {
-                    const resp = await fetch(song.url);
-                    if (!resp.ok) continue;
-                    const blob = await resp.blob();
-                    const file = new File([blob], song.name + '.wav', { type: 'audio/wav' });
-                    await player.addFiles([file]);
-                } catch (e) {
-                    console.log(`Could not load ${song.name}: ${e.message}`);
-                }
+                const track = {
+                    id: Date.now() + Math.random() + loaded,
+                    name: song.name,
+                    file: null,
+                    url: song.url,
+                    duration: 0,
+                    type: song.type,
+                    size: 0
+                };
+
+                // Probe duration using a temp audio element
+                const tempAudio = new Audio();
+                tempAudio.src = song.url;
+                tempAudio.addEventListener('loadedmetadata', () => {
+                    track.duration = tempAudio.duration;
+                    player.renderLibrary();
+                });
+                tempAudio.addEventListener('error', () => {
+                    console.log(`Could not load ${song.name}`);
+                });
+
+                player.tracks.push(track);
+                loaded++;
             }
+
+            statusEl.textContent = `${loaded} built-in song${loaded !== 1 ? 's' : ''} loaded — tap Library to play`;
+            statusEl.className = 'scan-status ready';
+            player.renderLibrary();
         }
 
         // Initialize
-        document.addEventListener('DOMContentLoaded', async () => {
+        document.addEventListener('DOMContentLoaded', () => {
             window.neoPlayer = new NeoAudioPlayer();
-            await loadBuiltinSongs(window.neoPlayer);
+            loadBuiltinSongs(window.neoPlayer);
         });
     </script>
 </body>
